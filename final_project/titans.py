@@ -6,8 +6,13 @@ Created on Mon Apr 27 14:27:48 2015
 """
 
 import pandas as pd
+from sklearn.linear_model import LogisticRegression
+from sklearn.cross_validation import train_test_split
+from sklearn import metrics
+from math import exp
 import numpy as np
 import matplotlib.pyplot as plt
+import datetime
 
 nfl2000 = pd.read_csv('nfl2000stats.csv', sep=',') #13-3
 nfl2001 = pd.read_csv('nfl2001stats.csv', sep=',') #7-9
@@ -24,9 +29,103 @@ nfl2011 = pd.read_csv('nfl2011stats.csv', sep=',') #9-7
 nfl2012 = pd.read_csv('nfl2012stats.csv', sep=',') #6-10
 nfl2013 = pd.read_csv('nfl2013stats.csv', sep=',') #7-9
 
-nfl2000['WinLoss'] = ('ScoreOff' > 'ScoreDef') #Trying to create column for win/loss
+nfl = pd.concat([nfl2000, nfl2001, nfl2002, nfl2003, nfl2004, nfl2005, nfl2006, nfl2007, nfl2008, nfl2009, nfl2010, nfl2011, nfl2012, nfl2013], axis=0)
+nfl['WinLoss'] = np.where(nfl.ScoreOff > nfl.ScoreDef, 1, 0)
 
-nfl2000.columns
+nfl['Year'] = [datetime.datetime.strptime(date, "%m/%d/%Y").year for date in nfl.Date]
+
+nfl.columns
+nfl.head()
+
+#exclude TeamName, Opponent, Date, ThirdDownPctDef, ThirdDownPctOff, TimePossDef, and TimePossOff because they're not numbers
+
+feature_cols1 = ['FirstDownDef', 'FirstDownOff', 'FumblesDef', 'FumblesOff', 'PassAttDef', 'PassAttOff', 'PassCompDef', 'PassCompOff', 'PassIntDef', 'PassIntOff', 
+ 'PassYdsDef', 'PassYdsOff', 'PenYdsDef', 'PenYdsOff', 'RushAttDef', 'RushAttOff', 'RushYdsDef', 'RushYdsOff', 'SackYdsDef', 'SackYdsOff'] 
+ 
+# 'ScoreDef', 'ScoreOff', 'SackNumDef', 'SackNumOff' --> prevents feature cols from fitting
+
+X = nfl[feature_cols1]
+y = nfl.WinLoss
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 2)
+
+from sklearn.ensemble import RandomForestClassifier
+rfclf = RandomForestClassifier(n_estimators=100, max_features=5, oob_score=True, random_state=1)
+rfclf.fit(nfl[feature_cols1], nfl.WinLoss)
+
+import matplotlib.pyplot as plt
+pd.DataFrame({'feature':feature_cols1, 'importance':rfclf.feature_importances_}).plot(kind='bar', title='Feature_Importances')
+plt.show()
+
+rfclf.oob_score_ #.8517
+
+feature_cols2 = ['RushAttDef', 'RushAttOff'] 
+ 
+X = nfl[feature_cols2]
+y = nfl.WinLoss
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state = 2)
+
+logreg = LogisticRegression()
+logreg.fit(X_train, y_train)
+y_pred = logreg.predict(X_test) # Predict
+
+# Access accuracy
+print metrics.accuracy_score(y_test, y_pred) #79%
+
+#RushYds 72%
+#PassAtt 69%
+#FirstDown 62%
+#PenYds 56%
+#PassYds 53%
+
+nfl.shape #7149
+
+nfl.reset_index(level=None, drop=True, inplace=True, col_level=0)
+
+nfl.boxplot(column='RushAttOff', by='WinLoss')
+
+nfl.groupby('WinLoss').RushAttOff.mean().plot(kind='bar')
+plt.xlabel('1: Win, 0: Loss')
+plt.ylabel('No. of Rush Attempts on Offense')
+plt.show()
+
+#More rushing = higher chance of predicting a win
+
+nfl.RushAttOff.hist(by=nfl.WinLoss, sharex=True, sharey=True)
+plt.show()
+
+#If you can afford to have 30-35 carries a game, does that indicate a higher chance of winning?
+
+
+
+
+
+
+
+
+nfl.WinLoss.value_counts()
+nfl.dtypes
+
+
+nfl.FirstDownDef.str.strip() astype(float)
+# Train test split
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #LIST W-L for Titans each year
@@ -101,7 +200,15 @@ nfl2013.ScoreOff.mean() #23.41
 nfl2013.groupby('TeamName').ScoreOff.mean() #22.62
 nfl2013.groupby('TeamName').ScoreDef.mean() #23.81
 
+
+
 #is there a way to merge into one massive df?
+#Where do you suggest I go from here?
+#kaggle exercises to continue improving?
+
+
+
+
 nfl = pd.merge(nfl2000, nfl2001, how='outer', on=None, left_on=None, right_on=None,
       left_index=True, right_index=True, sort=True,
       suffixes=('_x', '_y'), copy=True)
