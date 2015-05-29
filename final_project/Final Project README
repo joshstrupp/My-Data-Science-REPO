@@ -1,0 +1,16 @@
+My original goal was to find which statistics best predict a win or loss for the Tennessee Titans. When I realized I had data on over 7000 games for all 32 teams for 14 years, I reconsidered. Now I'm seeing which statistics can best predict a win or a loss for ANY team since 2000.
+
+PROCESS:
+First I uploaded each individual year. Some features were not floats or integers, like team name, date, etc. With the help of Kevin and Brandon, I erased erroneous data from the original CSVs (only 6 games total in 2003 and 2004) and ensured that the only data that went into my model was a number. I then concatenated years 2000-2013 into one mega dataframe called 'nfl'. I added a column WinLoss (0: loss, 1: win) and a column for Year (eliminates need for date). 
+
+I then did a train test split, and then fit the data using Random Forests. With n_estimators=100 and max_features=5, I learned that the most important features in predicting WinLoss was rushing attempts with an oob_score_ of 85%
+
+...wtf? Rushing attempts?! Not passing yards or turnovers or penalty yards???
+
+I then double checked using Logistic regression and sure enough I got the same results. Rushing attempts predicted WinLoss with 79% accuracy. Rushing yards sat at 72%, passing attempts 69%, first downs 62%, and penalty yards 56%. 
+
+Then I started visualizing the data, particularly RushAttOff and RushAttDef, to better understand. Turns out teams that rush an average of 20-25 times are less likely to win than teams that rush 30-35 times. 
+
+I still want to see how this correlates with successful teams in the last 5 years, see if some teams are skewing the data, and a whole lot more. 
+
+I'm open to any and all suggestions on how to move forward!!! Also if you see an error in my code or logic let me know!!!
